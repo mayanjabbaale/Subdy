@@ -19,7 +19,7 @@ export default function App() {
             <Link href="/(auth)/sign_in" className="mt-4 p-4 bg-primary text-white rounded-lg">Login</Link>
             <Link href="/(auth)/signup" className="mt-4 p-4 bg-primary text-white rounded-lg">Sign Up</Link>
 
-            <Link  href="/(tabs)/subscriptions" className="mt-4 p-4 bg-primary text-white rounded-lg">Spotify</Link>
+            <Link  href="/subscriptions/spotify" className="mt-4 p-4 bg-primary text-white rounded-lg">Spotify</Link>
           </SafeAreaView>
     </SafeAreaProvider>
 
