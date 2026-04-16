@@ -50,6 +50,23 @@ declare global {
     interface ListHeadingProps {
         title: string;
     }
+
+    interface SubCardProps {
+        icon: ImageSourcePropType;
+        name: string;
+        price: number;
+        currency?: string;
+        billing: string;
+        color?: string,
+        category?: string;
+        plan?: string;
+        renewalDate?: string;
+        expanded: boolean;
+        onPress: () => void;
+        paymentMethod?: string;
+        startDate?: string;
+        status?: string;
+    }
 }
 
 export {};
