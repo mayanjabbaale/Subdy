@@ -51,7 +51,7 @@ export default function App() {
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   ListEmptyComponent={
-                    <Text home-empty-state>No Upcoming renewals yet.</Text>
+                    <Text className="home-empty-state">No Upcoming renewals yet.</Text>
                   } />
               </View>
               <ListHeading title='All Subscriptions' />

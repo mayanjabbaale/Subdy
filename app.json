@@ -55,7 +55,7 @@
       "reactCompiler": true
     },
     "updates": {
-      "enabler": false
+      "enabled": false
     }
   }
 }
