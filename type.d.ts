@@ -50,6 +50,23 @@ declare global {
     interface ListHeadingProps {
         title: string;
     }
+
+    interface SubCardProps {
+        icon: icons.adobe;
+        name: string;
+        price: number;
+        currency?: string;
+        billing: string;
+        color?: string,
+        category?: string;
+        plan?: string;
+        renewalDate?: string;
+        expanded: any;
+        onPress: any;
+        paymentMethod?: string;
+        startDate?: string;
+        status?: string;
+    }
 }
 
 export {};
