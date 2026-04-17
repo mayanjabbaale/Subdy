@@ -41,3 +41,8 @@ app-example
 # generated native folders
 /ios
 /android
+
+clerk-documentation.md
+
+.env
+.example.env

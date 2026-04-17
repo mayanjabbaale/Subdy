@@ -5,7 +5,7 @@ import { ActivityIndicator } from 'react-native';
 import { colors } from '@/constants/theme';
 import '@/global.css';
 
-export default function AuthLayout() {
+export default function HomeLayout() {
   const { isSignedIn, isLoaded } = useAuth();
 
   if (!isLoaded) {
@@ -16,8 +16,8 @@ export default function AuthLayout() {
     );
   }
 
-  if (isSignedIn) {
-    return <Redirect href="/(home)" />;
+  if (!isSignedIn) {
+    return <Redirect href="/(auth)/sign-in" />;
   }
 
   return (
