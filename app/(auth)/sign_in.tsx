@@ -12,12 +12,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSignIn } from '@clerk/expo';
 import { useRouter, Link } from 'expo-router';
-import { colors, spacing } from '@/constants/theme';
+import { colors } from '@/constants/theme';
 import { validateEmail, parseClerkError } from '@/utils/validation';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function SignInScreen() {
-  const { signIn, isLoaded, setActive } = useSignIn();
+  const { signIn } = useSignIn();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -28,14 +28,6 @@ export default function SignInScreen() {
   const [verificationCode, setVerificationCode] = useState('');
   const [needsMFA, setNeedsMFA] = useState(false);
   const [mfaError, setMfaError] = useState<string>();
-
-  if (!isLoaded) {
-    return (
-      <SafeAreaView className="flex-1 bg-[#fff9e3] items-center justify-center">
-        <ActivityIndicator size="large" color={colors.accent} />
-      </SafeAreaView>
-    );
-  }
 
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
@@ -67,35 +59,12 @@ export default function SignInScreen() {
         password,
       });
 
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
+      // Clerk Expo returns { error: ClerkError | null }
+      if (result?.error) {
+        setErrors({ general: parseClerkError(result.error) });
+      } else {
+        // Sign in successful, navigate to home
         router.replace('/(home)');
-      } else if (result.status === 'needs_second_factor') {
-        // Check if email_code factor is available
-        const emailCodeFactor = result.supportedSecondFactors.find(
-          (factor) => factor.strategy === 'email_code'
-        );
-        
-        if (!emailCodeFactor) {
-          setErrors({ 
-            general: 'Email verification not available. Supported factors: ' + 
-              result.supportedSecondFactors.map((f) => f.strategy).join(', ') 
-          });
-          return;
-        }
-        
-        // Send MFA code and only set MFA state on success
-        try {
-          await signIn.mfa.sendEmailCode({ strategy: 'email_code' });
-          setNeedsMFA(true);
-        } catch (mfaError: any) {
-          setErrors({ 
-            general: 'Failed to send verification code: ' + parseClerkError(mfaError) 
-          });
-        }
-      } else if (result.status === 'needs_first_factor') {
-        // Additional factor needed
-        setErrors({ general: 'Additional verification required' });
       }
     } catch (err: any) {
       setErrors({ general: parseClerkError(err) });
@@ -116,8 +85,7 @@ export default function SignInScreen() {
     try {
       const result = await signIn.mfa.verifyEmailCode({ code: verificationCode });
 
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
+      if (result && !result.error) {
         router.replace('/(home)');
       } else {
         setMfaError('Verification failed. Please try again.');
@@ -296,7 +264,7 @@ export default function SignInScreen() {
 
           {/* Sign Up Link */}
           <View className="flex-row justify-center items-center mt-6 gap-2">
-            <Text className="text-[#081126] font-sans-regular">Don't have an account? </Text>
+            <Text className="text-[#081126] font-sans-regular">{`${"Don't have an account?"}`}</Text>
             <Link href="/(auth)/signup">
               <Text className="text-[#ea7a53] font-sans-semibold">Create an account</Text>
             </Link>

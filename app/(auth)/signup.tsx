@@ -24,7 +24,7 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function SignUpScreen() {
-  const { signUp } = useSignUp();
+  const { signUp, fetchStatus } = useSignUp();
   const { isLoaded } = useAuth();
   const router = useRouter();
 
@@ -33,7 +33,6 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;
@@ -44,6 +43,8 @@ export default function SignUpScreen() {
   const [verificationCode, setVerificationCode] = useState('');
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
   const [verificationError, setVerificationError] = useState<string>();
+
+  const isLoading = fetchStatus === 'fetching';
 
   if (!isLoaded) {
     return (
@@ -83,28 +84,25 @@ export default function SignUpScreen() {
   };
 
   const handleSignUp = async () => {
-    if (!validateForm()) return;
+    if (!validateForm() || !signUp) return;
 
-    setIsLoading(true);
     setErrors({});
 
     try {
-      const result = await signUp.create({
+      const { error } = await signUp.password({
         emailAddress: email.toLowerCase().trim(),
         password,
       });
 
-      // In Clerk Expo, handle the signup response
-      if (result && !result.error) {
-        // Signup created successfully - navigate to home
-        router.replace('/(home)');
-      } else {
-        setErrors({ general: result?.error?.message || 'Sign up failed. Please try again.' });
+      if (error) {
+        setErrors({ general: error.message || 'Sign up failed. Please try again.' });
+        return;
       }
+
+      await signUp.verifications.sendEmailCode();
+      setNeedsEmailVerification(true);
     } catch (err: any) {
       setErrors({ general: parseClerkError(err) });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -113,31 +111,32 @@ export default function SignUpScreen() {
       setVerificationError('Please enter the verification code');
       return;
     }
+    if (!signUp) return;
 
-    setIsLoading(true);
     setVerificationError(undefined);
 
     try {
-      // Email verification flow for Expo (if supported)
-      // This may need to be adjusted based on your Clerk Expo setup
-      setNeedsEmailVerification(false);
-      router.replace('/(home)');
+      await signUp.verifications.verifyEmailCode({ code: verificationCode });
+
+      if (signUp.status === 'complete') {
+        await signUp.finalize({
+          navigate: () => router.replace('/(home)'),
+        });
+      } else {
+        setVerificationError('Verification incomplete. Please try again.');
+      }
     } catch (err: any) {
       setVerificationError(parseClerkError(err));
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleResendCode = async () => {
-    setIsLoading(true);
+    if (!signUp) return;
+    setVerificationError(undefined);
     try {
-      // Resend verification code logic
-      // Adjust based on your Clerk Expo implementation
+      await signUp.verifications.sendEmailCode();
     } catch (err: any) {
       setVerificationError(parseClerkError(err));
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -381,7 +380,7 @@ export default function SignUpScreen() {
           {/* Sign In Link */}
           <View className="flex-row justify-center items-center gap-1">
             <Text className="text-[#081126] font-sans-regular">Already have an account? </Text>
-            <Link href="/(auth)/sign-in">
+            <Link href="/(auth)/sign_in">
               <Text className="text-[#ea7a53] font-sans-semibold">Sign in</Text>
             </Link>
           </View>

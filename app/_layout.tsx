@@ -2,11 +2,8 @@ import { SplashScreen, Slot } from "expo-router";
 import '@/global.css';
 import { useFonts } from 'expo-font';
 import { useEffect } from "react";
-import { ClerkProvider, useAuth } from '@clerk/expo';
+import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator } from 'react-native';
-import { colors } from '@/constants/theme';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
@@ -15,7 +12,6 @@ if (!publishableKey) {
 }
 
 function RootLayoutContent() {
-  const { isLoaded } = useAuth();
   const [fontsLoaded] = useFonts({
     'sans-regular': require('../assets/fonts/PlusJakartaSans-Regular.ttf'),
     'sans-bold': require('../assets/fonts/PlusJakartaSans-Bold.ttf'),
@@ -25,20 +21,14 @@ function RootLayoutContent() {
     'sans-light': require('../assets/fonts/PlusJakartaSans-Light.ttf'),
   });
 
-  useEffect(()=> {
-    if(fontsLoaded){
-      SplashScreen.hideAsync()
+  useEffect(() => {
+    if (fontsLoaded){
+      SplashScreen.hideAsync();
     }
-}, [fontsLoaded])
+  }, [fontsLoaded]);
 
-  if (!fontsLoaded || !isLoaded) {
-    return (
-      <SafeAreaView className="flex-1 bg-[#fff9e3] items-center justify-center">
-        <ActivityIndicator size="large" color={colors.accent} />
-      </SafeAreaView>
-    );
-  }
-  
+  if (!fontsLoaded) return null;
+
   return <Slot />;
 }
 
