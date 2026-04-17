@@ -17,11 +17,14 @@ export default function HomeScreen() {
   const { signOut } = useClerk();
   const { isLoaded } = useAuth();
   const router = useRouter();
+  
+  // Compute email verification status from Clerk user data
+  const isEmailVerified = user?.emailAddresses?.some(email => email.verification?.status === 'verified') ?? false;
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      router.replace('/(auth)/sign-in');
+      router.replace('/(auth)/sign_in');
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -83,8 +86,10 @@ export default function HomeScreen() {
               <View className="flex-row items-center justify-between">
                 <Text className="text-sm text-[#081126]/70 font-sans-medium">Email verified</Text>
                 <View className="flex-row items-center gap-1">
-                  <View className="w-2 h-2 rounded-full bg-[#16a34a]" />
-                  <Text className="text-sm text-[#16a34a] font-sans-semibold">Verified</Text>
+                  <View className={`w-2 h-2 rounded-full ${isEmailVerified ? 'bg-[#16a34a]' : 'bg-[#d1d5db]'}`} />
+                  <Text className={`text-sm font-sans-semibold ${isEmailVerified ? 'text-[#16a34a]' : 'text-[#6b7280]'}`}>
+                    {isEmailVerified ? 'Verified' : 'Unverified'}
+                  </Text>
                 </View>
               </View>
             </View>

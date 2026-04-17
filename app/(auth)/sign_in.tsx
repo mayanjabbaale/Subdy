@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSignIn } from '@clerk/expo';
 import { useRouter, Link } from 'expo-router';
 import { colors, spacing } from '@/constants/theme';
-import { validateEmail, validatePassword, parseClerkError } from '@/utils/validation';
+import { validateEmail, parseClerkError } from '@/utils/validation';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function SignInScreen() {
@@ -45,9 +45,10 @@ export default function SignInScreen() {
       newErrors.email = emailValidation.error;
     }
 
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.valid) {
-      newErrors.password = passwordValidation.error;
+    // For sign-in, only check that password is non-empty
+    // Server-side validation (Clerk) handles credential verification
+    if (!password || password.trim().length === 0) {
+      newErrors.password = 'Password is required';
     }
 
     setErrors(newErrors);
@@ -70,13 +71,27 @@ export default function SignInScreen() {
         await setActive({ session: result.createdSessionId });
         router.replace('/(home)');
       } else if (result.status === 'needs_second_factor') {
-        setNeedsMFA(true);
-        // Send MFA code
+        // Check if email_code factor is available
         const emailCodeFactor = result.supportedSecondFactors.find(
           (factor) => factor.strategy === 'email_code'
         );
-        if (emailCodeFactor) {
+        
+        if (!emailCodeFactor) {
+          setErrors({ 
+            general: 'Email verification not available. Supported factors: ' + 
+              result.supportedSecondFactors.map((f) => f.strategy).join(', ') 
+          });
+          return;
+        }
+        
+        // Send MFA code and only set MFA state on success
+        try {
           await signIn.mfa.sendEmailCode({ strategy: 'email_code' });
+          setNeedsMFA(true);
+        } catch (mfaError: any) {
+          setErrors({ 
+            general: 'Failed to send verification code: ' + parseClerkError(mfaError) 
+          });
         }
       } else if (result.status === 'needs_first_factor') {
         // Additional factor needed
@@ -140,7 +155,7 @@ export default function SignInScreen() {
               <TextInput
                 className="bg-[#fff8e7] border border-[#f6eecf] rounded-2xl px-4 py-3 text-base text-[#081126] font-sans-regular"
                 placeholder="Enter 6-digit code"
-                placeholderTextColor="#081126/40"
+                placeholderTextColor="#08112666"
                 value={verificationCode}
                 onChangeText={setVerificationCode}
                 editable={!isLoading}
@@ -263,13 +278,6 @@ export default function SignInScreen() {
               <Text className="text-[#dc2626] text-sm mt-2 font-sans-medium">{errors.password}</Text>
             )}
           </View>
-
-          {/* Forgot Password Link */}
-          <Link href="#">
-            <Text className="text-[#ea7a53] font-sans-semibold text-sm text-right mb-6">
-              Forgot password?
-            </Text>
-          </Link>
 
           {/* Sign In Button */}
           <Pressable
