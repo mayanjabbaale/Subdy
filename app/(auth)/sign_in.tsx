@@ -148,7 +148,7 @@ export default function Page() {
       </View>
 
       <View className="flex-row justify-center mt-8 gap-x-1">
-        <Text className="text-gray-600">Do nott have an account?</Text>
+        <Text className="text-gray-600">Don't have an account?</Text>
         <Link href="/(auth)/signup">
           <Text className="text-sky-600 font-bold">Sign up</Text>
         </Link>
