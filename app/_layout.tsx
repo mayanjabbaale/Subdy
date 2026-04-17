@@ -1,12 +1,12 @@
-import { SplashScreen, Redirect } from "expo-router";
+import { SplashScreen, Slot } from "expo-router";
 import '@/global.css';
 import { useFonts } from 'expo-font';
 import { useEffect } from "react";
 import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator } from "react-native";
-import { colors } from "@/constants/theme";
+import { ActivityIndicator } from 'react-native';
+import { colors } from '@/constants/theme';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
@@ -14,25 +14,8 @@ if (!publishableKey) {
   throw new Error('Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY');
 }
 
-function RootNavigator() {
-  const { isSignedIn, isLoaded } = useAuth();
-
-  if (!isLoaded) {
-    return (
-      <SafeAreaView className="flex-1 bg-[#fff9e3] items-center justify-center">
-        <ActivityIndicator size="large" color={colors.accent} />
-      </SafeAreaView>
-    );
-  }
-
-  if (!isSignedIn) {
-    return <Redirect href="/(auth)/sign-in" />;
-  }
-
-  return <Redirect href="/(home)" />;
-}
-
-export default function RootLayout() {
+function RootLayoutContent() {
+  const { isLoaded } = useAuth();
   const [fontsLoaded] = useFonts({
     'sans-regular': require('../assets/fonts/PlusJakartaSans-Regular.ttf'),
     'sans-bold': require('../assets/fonts/PlusJakartaSans-Bold.ttf'),
@@ -48,11 +31,21 @@ export default function RootLayout() {
     }
 }, [fontsLoaded])
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !isLoaded) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#fff9e3] items-center justify-center">
+        <ActivityIndicator size="large" color={colors.accent} />
+      </SafeAreaView>
+    );
+  }
   
+  return <Slot />;
+}
+
+export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <RootNavigator />
+      <RootLayoutContent />
     </ClerkProvider>
   );
 }
