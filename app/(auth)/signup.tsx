@@ -1,391 +1,171 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ScrollView,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSignUp, useAuth } from '@clerk/expo';
-import { useRouter, Link } from 'expo-router';
-import { colors } from '@/constants/theme';
-import {
-  validateEmail,
-  validatePassword,
-  validatePasswordMatch,
-  getPasswordStrengthColor,
-  getPasswordStrengthLabel,
-  parseClerkError,
-} from '@/utils/validation';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useAuth, useSignUp } from '@clerk/expo'
+import { type Href, Link, useRouter } from 'expo-router'
+import React from 'react'
+import { Pressable, TextInput, View, Text } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-export default function SignUpScreen() {
-  const { signUp, fetchStatus } = useSignUp();
-  const { isLoaded } = useAuth();
-  const router = useRouter();
+export default function Page() {
+  const { signUp, errors, fetchStatus } = useSignUp()
+  const { isSignedIn } = useAuth()
+  const router = useRouter()
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState<{
-    email?: string;
-    password?: string;
-    confirmPassword?: string;
-    general?: string;
-  }>({});
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'fair' | 'strong'>();
-  const [verificationCode, setVerificationCode] = useState('');
-  const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
-  const [verificationError, setVerificationError] = useState<string>();
+  const [emailAddress, setEmailAddress] = React.useState('')
+  const [password, setPassword] = React.useState('')
+  const [code, setCode] = React.useState('')
 
-  const isLoading = fetchStatus === 'fetching';
+  const handleNavigation = ({ session, decorateUrl }: any) => {
+    if (session?.currentTask) {
+      console.log(session?.currentTask)
+      return
+    }
 
-  if (!isLoaded) {
-    return (
-      <SafeAreaView className="flex-1 bg-[#fff9e3] items-center justify-center">
-        <ActivityIndicator size="large" color={colors.accent} />
-      </SafeAreaView>
-    );
+    const url = decorateUrl('/')
+    if (url.startsWith('http')) {
+      window.location.href = url
+    } else {
+      router.push(url as Href)
+    }
   }
 
-  const handlePasswordChange = (text: string) => {
-    setPassword(text);
-    const validation = validatePassword(text);
-    setPasswordStrength(validation.strength);
-    if (errors.password) setErrors({ ...errors, password: undefined });
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: typeof errors = {};
-
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.valid) {
-      newErrors.email = emailValidation.error;
+  const handleSubmit = async () => {
+    const { error } = await signUp.password({
+      emailAddress,
+      password,
+    })
+    if (error) {
+      console.error(JSON.stringify(error, null, 2))
+      return
     }
 
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.valid) {
-      newErrors.password = passwordValidation.error;
+    await signUp.verifications.sendEmailCode()
+  }
+
+  const handleVerify = async () => {
+    await signUp.verifications.verifyEmailCode({ code })
+
+    if (signUp.status === 'complete') {
+      await signUp.finalize({ navigate: handleNavigation })
+    } else {
+      console.error('Sign-up attempt not complete:', signUp)
     }
+  }
 
-    const passwordMatchValidation = validatePasswordMatch(password, confirmPassword);
-    if (!passwordMatchValidation.valid) {
-      newErrors.confirmPassword = passwordMatchValidation.error;
-    }
+  if (signUp.status === 'complete' || isSignedIn) {
+    return null
+  }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  // Common input style to keep things DRY
+  const inputClasses = "border border-gray-300 rounded-lg p-4 text-base bg-white mb-1"
 
-  const handleSignUp = async () => {
-    if (!validateForm() || !signUp) return;
-
-    setErrors({});
-
-    try {
-      const { error } = await signUp.password({
-        emailAddress: email.toLowerCase().trim(),
-        password,
-      });
-
-      if (error) {
-        setErrors({ general: error.message || 'Sign up failed. Please try again.' });
-        return;
-      }
-
-      await signUp.verifications.sendEmailCode();
-      setNeedsEmailVerification(true);
-    } catch (err: any) {
-      setErrors({ general: parseClerkError(err) });
-    }
-  };
-
-  const handleEmailVerification = async () => {
-    if (!verificationCode.trim()) {
-      setVerificationError('Please enter the verification code');
-      return;
-    }
-    if (!signUp) return;
-
-    setVerificationError(undefined);
-
-    try {
-      await signUp.verifications.verifyEmailCode({ code: verificationCode });
-
-      if (signUp.status === 'complete') {
-        await signUp.finalize({
-          navigate: () => router.replace('/(home)'),
-        });
-      } else {
-        setVerificationError('Verification incomplete. Please try again.');
-      }
-    } catch (err: any) {
-      setVerificationError(parseClerkError(err));
-    }
-  };
-
-  const handleResendCode = async () => {
-    if (!signUp) return;
-    setVerificationError(undefined);
-    try {
-      await signUp.verifications.sendEmailCode();
-    } catch (err: any) {
-      setVerificationError(parseClerkError(err));
-    }
-  };
-
-  if (needsEmailVerification) {
+  // VERIFICATION VIEW
+  if (
+    signUp.status === 'missing_requirements' &&
+    signUp.unverifiedFields.includes('email_address') &&
+    signUp.missingFields.length === 0
+  ) {
     return (
-      <SafeAreaView className="flex-1 bg-[#fff9e3]">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          className="flex-1"
+      <SafeAreaView className="flex-1 bg-white p-6">
+        <Text className="text-2xl font-bold mb-6 text-gray-900">Verify your account</Text>
+        
+        <TextInput
+          className={inputClasses}
+          value={code}
+          placeholder="Enter your verification code"
+          placeholderTextColor="#999"
+          onChangeText={setCode}
+          keyboardType="numeric"
+        />
+
+        {errors.fields.code && (
+          <Text className="text-red-500 text-sm mb-4">{errors.fields.code.message}</Text>
+        )}
+
+        <Pressable
+          className={`bg-sky-600 py-4 rounded-xl items-center mt-2 ${
+            fetchStatus === 'fetching' ? 'opacity-50' : 'active:bg-sky-700'
+          }`}
+          onPress={handleVerify}
+          disabled={fetchStatus === 'fetching'}
         >
-          <ScrollView
-            className="flex-1 px-5"
-            contentContainerStyle={{ justifyContent: 'center', minHeight: '100%' }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Header */}
-            <View className="mb-8">
-              <Text className="text-3xl font-sans-bold text-[#081126] mb-2">Verify Your Email</Text>
-              <Text className="text-base text-[#081126]/60">
-                We sent a verification code to {email}
-              </Text>
-            </View>
+          <Text className="text-white font-bold text-lg">Verify</Text>
+        </Pressable>
 
-            {/* Verification Code Input */}
-            <View className="mb-6">
-              <Text className="font-sans-semibold text-[#081126] mb-3">Verification Code</Text>
-              <TextInput
-                className="bg-[#fff8e7] border border-[#f6eecf] rounded-2xl px-4 py-3 text-base text-[#081126] font-sans-regular"
-                placeholder="Enter 6-digit code"
-                placeholderTextColor="rgba(8, 17, 38, 0.4)"
-                value={verificationCode}
-                onChangeText={setVerificationCode}
-                editable={!isLoading}
-                maxLength={6}
-                keyboardType="number-pad"
-              />
-              {verificationError && (
-                <Text className="text-[#dc2626] text-sm mt-2 font-sans-medium">
-                  {verificationError}
-                </Text>
-              )}
-            </View>
-
-            {/* Verify Button */}
-            <Pressable
-              onPress={handleEmailVerification}
-              disabled={isLoading || !verificationCode.trim()}
-              className={`rounded-2xl py-3 px-5 flex-row justify-center items-center ${
-                isLoading || !verificationCode.trim()
-                  ? 'bg-[#ea7a53]/50'
-                  : 'bg-[#ea7a53] active:opacity-80'
-              }`}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text className="text-white font-sans-semibold text-base">Verify Email</Text>
-              )}
-            </Pressable>
-
-            {/* Resend Code */}
-            <View className="mt-6 flex-row justify-center gap-1">
-              <Text className="text-[#081126] font-sans-regular">Didn&apos;t receive the code? </Text>
-              <Pressable onPress={handleResendCode} disabled={isLoading}>
-                <Text className="text-[#ea7a53] font-sans-semibold">Resend</Text>
-              </Pressable>
-            </View>
-
-            {/* Back Button */}
-            <Pressable
-              onPress={() => setNeedsEmailVerification(false)}
-              disabled={isLoading}
-              className="mt-4"
-            >
-              <Text className="text-[#081126] font-sans-medium text-center">Back to Sign Up</Text>
-            </Pressable>
-          </ScrollView>
-        </KeyboardAvoidingView>
+        <Pressable 
+          className="mt-6 items-center active:opacity-60" 
+          onPress={() => signUp.verifications.sendEmailCode()}
+        >
+          <Text className="text-sky-600 font-semibold">I need a new code</Text>
+        </Pressable>
       </SafeAreaView>
-    );
+    )
   }
 
+  // INITIAL SIGN UP VIEW
   return (
-    <SafeAreaView className="flex-1 bg-[#fff9e3]">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
-        <ScrollView
-          className="flex-1 px-5"
-          contentContainerStyle={{ justifyContent: 'center', minHeight: '100%' }}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Header */}
-          <View className="mb-8">
-            <Text className="text-3xl font-sans-bold text-[#081126]">Create account</Text>
-            <Text className="text-base text-[#081126]/60 mt-2">
-              Sign up to start managing your subscriptions
-            </Text>
-          </View>
+    <SafeAreaView className="flex-1 bg-white p-6">
+      <Text className="text-3xl font-bold mb-8 text-gray-900">Sign up</Text>
 
-          {/* General Error */}
-          {errors.general && (
-            <View className="bg-[#fecaca] border border-[#fca5a5] rounded-lg p-3 mb-6">
-              <Text className="text-[#dc2626] font-sans-medium text-sm">{errors.general}</Text>
-            </View>
+      <View className="gap-y-4">
+        <View>
+          <Text className="font-semibold text-gray-700 mb-2">Email address</Text>
+          <TextInput
+            className={inputClasses}
+            autoCapitalize="none"
+            value={emailAddress}
+            placeholder="email@example.com"
+            placeholderTextColor="#999"
+            onChangeText={setEmailAddress}
+            keyboardType="email-address"
+          />
+          {errors.fields.emailAddress && (
+            <Text className="text-red-500 text-xs mt-1">{errors.fields.emailAddress.message}</Text>
           )}
+        </View>
 
-          {/* Email Input */}
-          <View className="mb-5">
-            <Text className="font-sans-semibold text-[#081126] mb-2">Email address</Text>
-            <TextInput
-              className={`bg-[#fff8e7] border-2 rounded-2xl px-4 py-3 text-base font-sans-regular ${
-                errors.email ? 'border-[#dc2626]' : 'border-[#f6eecf]'
-              }`}
-              placeholder="Enter your email"
-              placeholderTextColor="rgba(8, 17, 38, 0.4)"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (errors.email) setErrors({ ...errors, email: undefined });
-              }}
-              editable={!isLoading}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
-            {errors.email && (
-              <Text className="text-[#dc2626] text-sm mt-2 font-sans-medium">{errors.email}</Text>
-            )}
-          </View>
+        <View>
+          <Text className="font-semibold text-gray-700 mb-2">Password</Text>
+          <TextInput
+            className={inputClasses}
+            value={password}
+            placeholder="••••••••"
+            placeholderTextColor="#999"
+            secureTextEntry
+            onChangeText={setPassword}
+          />
+          {errors.fields.password && (
+            <Text className="text-red-500 text-xs mt-1">{errors.fields.password.message}</Text>
+          )}
+        </View>
 
-          {/* Password Input */}
-          <View className="mb-2">
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="font-sans-semibold text-[#081126]">Password</Text>
-              {password && (
-                <View className="flex-row items-center gap-1">
-                  <View
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: getPasswordStrengthColor(passwordStrength) }}
-                  />
-                  <Text
-                    className="text-xs font-sans-semibold"
-                    style={{ color: getPasswordStrengthColor(passwordStrength) }}
-                  >
-                    {getPasswordStrengthLabel(passwordStrength)}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <View
-              className={`flex-row items-center bg-[#fff8e7] border-2 rounded-2xl px-4 ${
-                errors.password ? 'border-[#dc2626]' : 'border-[#f6eecf]'
-              }`}
-            >
-              <TextInput
-                className="flex-1 py-3 text-base font-sans-regular text-[#081126]"
-                placeholder="Min 8 chars, upper, lower, number, symbol"
-                placeholderTextColor="rgba(8, 17, 38, 0.4)"
-                value={password}
-                onChangeText={handlePasswordChange}
-                editable={!isLoading}
-                secureTextEntry={!showPassword}
-              />
-              <Pressable
-                onPress={() => setShowPassword(!showPassword)}
-                className="p-2"
-                disabled={isLoading}
-              >
-                <MaterialIcons
-                  name={showPassword ? 'visibility' : 'visibility-off'}
-                  size={24}
-                  color={colors.primary}
-                />
-              </Pressable>
-            </View>
-            {errors.password && (
-              <Text className="text-[#dc2626] text-sm mt-2 font-sans-medium">{errors.password}</Text>
-            )}
-          </View>
+        <Pressable
+          className={`bg-sky-600 py-4 rounded-xl items-center mt-4 ${
+            (!emailAddress || !password || fetchStatus === 'fetching') 
+              ? 'opacity-50' 
+              : 'active:bg-sky-700'
+          }`}
+          onPress={handleSubmit}
+          disabled={!emailAddress || !password || fetchStatus === 'fetching'}
+        >
+          <Text className="text-white font-bold text-lg">Sign up</Text>
+        </Pressable>
+      </View>
 
-          {/* Confirm Password Input */}
-          <View className="mb-6">
-            <Text className="font-sans-semibold text-[#081126] mb-2">Confirm password</Text>
-            <View
-              className={`flex-row items-center bg-[#fff8e7] border-2 rounded-2xl px-4 ${
-                errors.confirmPassword ? 'border-[#dc2626]' : 'border-[#f6eecf]'
-              }`}
-            >
-              <TextInput
-                className="flex-1 py-3 text-base font-sans-regular text-[#081126]"
-                placeholder="Re-enter your password"
-                placeholderTextColor="rgba(8, 17, 38, 0.4)"
-                value={confirmPassword}
-                onChangeText={(text) => {
-                  setConfirmPassword(text);
-                  if (errors.confirmPassword)
-                    setErrors({ ...errors, confirmPassword: undefined });
-                }}
-                editable={!isLoading}
-                secureTextEntry={!showConfirmPassword}
-              />
-              <Pressable
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="p-2"
-                disabled={isLoading}
-              >
-                <MaterialIcons
-                  name={showConfirmPassword ? 'visibility' : 'visibility-off'}
-                  size={24}
-                  color={colors.primary}
-                />
-              </Pressable>
-            </View>
-            {errors.confirmPassword && (
-              <Text className="text-[#dc2626] text-sm mt-2 font-sans-medium">
-                {errors.confirmPassword}
-              </Text>
-            )}
-          </View>
+      <View className="flex-row justify-center mt-8 gap-x-1">
+        <Text className="text-gray-600">Already have an account?</Text>
+        <Link href="/(auth)/sign_in">
+          <Text className="text-sky-600 font-bold">Sign in</Text>
+        </Link>
+      </View>
 
-          {/* Sign Up Button */}
-          <Pressable
-            onPress={handleSignUp}
-            disabled={isLoading}
-            className={`rounded-2xl py-3 px-5 flex-row justify-center items-center mb-6 ${
-              isLoading ? 'bg-[#ea7a53]/50' : 'bg-[#ea7a53] active:opacity-80'
-            }`}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-white font-sans-semibold text-base">Create account</Text>
-            )}
-          </Pressable>
+      {/* Debug view for errors */}
+      {Object.keys(errors.fields).length > 0 && (
+        <View className="mt-10 p-4 bg-gray-50 rounded-lg">
+          <Text className="text-gray-400 text-[10px]">{JSON.stringify(errors, null, 2)}</Text>
+        </View>
+      )}
 
-          {/* Clerk CAPTCHA */}
-          <View nativeID="clerk-captcha" />
-
-          {/* Sign In Link */}
-          <View className="flex-row justify-center items-center gap-1">
-            <Text className="text-[#081126] font-sans-regular">Already have an account? </Text>
-            <Link href="/(auth)/sign_in">
-              <Text className="text-[#ea7a53] font-sans-semibold">Sign in</Text>
-            </Link>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      {/* Required for Clerk bot protection */}
+      <View nativeID="clerk-captcha" />
     </SafeAreaView>
-  );
+  )
 }
