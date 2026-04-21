@@ -299,40 +299,32 @@ export default function Page() {
             </View>
           </View>
 
-          {/* Sign In Button */}
-          <Pressable
-            onPress={handleSubmit}
-            disabled={!emailAddress || !password || fetchStatus === 'fetching'}
-            style={({ pressed }) => ({
-              backgroundColor: '#ea7a53',
-              paddingVertical: 16, borderRadius: 16,
-              alignItems: 'center',
-              opacity: (!emailAddress || !password || fetchStatus === 'fetching') ? 0.5 : pressed ? 0.88 : 1,
-              shadowColor: '#ea7a53',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.3, shadowRadius: 12,
-              elevation: 4,
-              marginBottom: 20,
-            })}
-          >
-            <Text style={{ fontFamily: 'sans-bold', fontSize: 16, color: '#fff' }}>
-              {fetchStatus === 'fetching' ? 'Signing in…' : 'Sign in'}
-            </Text>
-          </Pressable>
+        <Pressable
+          className={`bg-sky-600 py-4 rounded-xl items-center mt-4 ${
+            (!emailAddress || !password || fetchStatus === 'fetching') 
+              ? 'opacity-50' 
+              : 'active:bg-sky-700'
+          }`}
+          onPress={handleSubmit}
+          disabled={!emailAddress || !password || fetchStatus === 'fetching'}
+        >
+          <Text className="text-white font-bold text-lg">Continue</Text>
+        </Pressable>
+      </View>
 
-          {/* Sign Up Link */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 4 }}>
-            <Text style={{ fontFamily: 'sans-regular', fontSize: 14, color: '#6b7280' }}>
-              Do not have an account?
-            </Text>
-            <Link href="/(auth)/signup">
-              <Text style={{ fontFamily: 'sans-bold', fontSize: 14, color: '#ea7a53' }}>
-                Sign up
-              </Text>
-            </Link>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      <View className="flex-row justify-center mt-8 gap-x-1">
+        <Text className="text-gray-600">Do nott have an account?</Text>
+        <Link href="/(auth)/signup">
+          <Text className="text-sky-600 font-bold">Sign up</Text>
+        </Link>
+      </View>
+
+      {/* Debug Errors Footer */}
+      {Object.keys(errors.fields).length > 0 && (
+        <View className="mt-10 p-4 bg-red-50 rounded-lg">
+           <Text className="text-red-400 text-[10px]">{JSON.stringify(errors, null, 2)}</Text>
+        </View>
+      )}
     </SafeAreaView>
   )
 }
