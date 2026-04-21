@@ -1,9 +1,9 @@
 import { useSignIn } from '@clerk/expo'
 import { type Href, Link, useRouter } from 'expo-router'
 import React from 'react'
-import { Pressable, TextInput, View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import { Pressable, TextInput, View, Text, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-// import images from '@/constants/images'
+import images from '@/constants/images'
 
 export default function Page() {
   const { signIn, errors, fetchStatus } = useSignIn()
@@ -299,32 +299,53 @@ export default function Page() {
             </View>
           </View>
 
-        <Pressable
-          className={`bg-sky-600 py-4 rounded-xl items-center mt-4 ${
-            (!emailAddress || !password || fetchStatus === 'fetching') 
-              ? 'opacity-50' 
-              : 'active:bg-sky-700'
-          }`}
-          onPress={handleSubmit}
-          disabled={!emailAddress || !password || fetchStatus === 'fetching'}
-        >
-          <Text className="text-white font-bold text-lg">Continue</Text>
-        </Pressable>
-      </View>
+          {/* Sign In Button */}
+          <Pressable
+            onPress={handleSubmit}
+            disabled={!emailAddress || !password || fetchStatus === 'fetching'}
+            style={({ pressed }) => ({
+              backgroundColor: '#ea7a53',
+              paddingVertical: 16, borderRadius: 16,
+              alignItems: 'center',
+              opacity: (!emailAddress || !password || fetchStatus === 'fetching') ? 0.5 : pressed ? 0.88 : 1,
+              shadowColor: '#ea7a53',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.3, shadowRadius: 12,
+              elevation: 4,
+              marginBottom: 20,
+            })}
+          >
+            <Text style={{ fontFamily: 'sans-bold', fontSize: 16, color: '#fff' }}>
+              {fetchStatus === 'fetching' ? 'Signing in…' : 'Sign in'}
+            </Text>
+          </Pressable>
 
-      <View className="flex-row justify-center mt-8 gap-x-1">
-        <Text className="text-gray-600">Do nott have an account?</Text>
-        <Link href="/(auth)/signup">
-          <Text className="text-sky-600 font-bold">Sign up</Text>
-        </Link>
-      </View>
+          {/* Sign Up Link */}
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 4 }}>
+            <Text style={{ fontFamily: 'sans-regular', fontSize: 14, color: '#6b7280' }}>
+              Do not have an account?
+            </Text>
+            <Link href="/(auth)/signup">
+              <Text style={{ fontFamily: 'sans-bold', fontSize: 14, color: '#ea7a53' }}>
+                Sign up
+              </Text>
+            </Link>
+          </View>
 
-      {/* Debug Errors Footer */}
-      {Object.keys(errors.fields).length > 0 && (
-        <View className="mt-10 p-4 bg-red-50 rounded-lg">
-           <Text className="text-red-400 text-[10px]">{JSON.stringify(errors, null, 2)}</Text>
-        </View>
-      )}
+          {/* Debug Errors */}
+          {Object.keys(errors.fields).length > 0 && (
+            <View style={{
+              marginTop: 24, padding: 12,
+              backgroundColor: '#fef2f2', borderRadius: 12,
+              borderWidth: 1, borderColor: '#fecaca',
+            }}>
+              <Text style={{ fontFamily: 'sans-regular', fontSize: 10, color: '#fca5a5' }}>
+                {JSON.stringify(errors, null, 2)}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
