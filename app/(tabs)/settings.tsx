@@ -373,7 +373,7 @@ export default function Settings() {
           fontFamily: 'sans-regular', fontSize: 12,
           color: '#c4bfb3', marginTop: 8,
         }}>
-          Subtrak v1.0.0
+          Subdy v1.0.0
         </Text>
       </ScrollView>
 

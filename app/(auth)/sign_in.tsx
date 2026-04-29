@@ -331,19 +331,6 @@ export default function Page() {
               </Text>
             </Link>
           </View>
-
-          {/* Debug Errors */}
-          {Object.keys(errors.fields).length > 0 && (
-            <View style={{
-              marginTop: 24, padding: 12,
-              backgroundColor: '#fef2f2', borderRadius: 12,
-              borderWidth: 1, borderColor: '#fecaca',
-            }}>
-              <Text style={{ fontFamily: 'sans-regular', fontSize: 10, color: '#fca5a5' }}>
-                {JSON.stringify(errors, null, 2)}
-              </Text>
-            </View>
-          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
