@@ -1,10 +1,20 @@
-import { SplashScreen, Stack } from "expo-router";
+import { SplashScreen, Slot } from "expo-router";
 import '@/global.css';
 import { useFonts } from 'expo-font';
 import { useEffect } from "react";
+import { ClerkProvider } from '@clerk/expo';
+import { tokenCache } from '@clerk/expo/token-cache';
+import { PostHogProvider } from 'posthog-react-native';
 
+SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+
+if (!publishableKey) {
+  throw new Error('Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY');
+}
+
+function RootLayoutContent() {
   const [fontsLoaded] = useFonts({
     'sans-regular': require('../assets/fonts/PlusJakartaSans-Regular.ttf'),
     'sans-bold': require('../assets/fonts/PlusJakartaSans-Bold.ttf'),
@@ -14,13 +24,25 @@ export default function RootLayout() {
     'sans-light': require('../assets/fonts/PlusJakartaSans-Light.ttf'),
   });
 
-  useEffect(()=> {
-    if(fontsLoaded){
-      SplashScreen.hideAsync()
+  useEffect(() => {
+    if (fontsLoaded){
+      SplashScreen.hideAsync();
     }
-}, [fontsLoaded])
+  }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
-  
-  return <Stack screenOptions={{headerShown: false}}/>;
+
+  return (
+        <Slot />
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <PostHogProvider apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY!} options={{ host: process.env.EXPO_PUBLIC_POSTHOG_HOST }}>
+      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+        <RootLayoutContent />
+      </ClerkProvider>
+    </PostHogProvider>
+  );
 }
