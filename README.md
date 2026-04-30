@@ -1,50 +1,34 @@
-# Welcome to your Expo app 👋
+# Subdy
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Subdy is a modern mobile subscription manager built with Expo and TypeScript. It helps users track recurring payments, manage active subscriptions, and gain visibility into monthly costs through a clean, mobile-first interface.
 
-## Get started
+## Key Features
 
-1. Install dependencies
+- View and manage all active subscriptions in one place
+- Add and customize subscription details like name, price, and billing cycle
+- Track subscription status and upcoming renewals
+- Designed for a smooth mobile experience using Expo and React Native
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+- Expo
+- React Native
+- TypeScript
+- NativeWind / Tailwind-style UI
 
-   ```bash
-   npx expo start
-   ```
+## Project Structure
 
-In the output, you'll find options to open the app in a
+- `app/` – application screens and navigation
+- `components/` – reusable UI components
+- `constants/` – app constants and assets
+- `utils/` – validation and helper utilities
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Getting Started
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+1. Install dependencies: `npm install`
+2. Start the development server: `npx expo start`
+3. Open the app in Expo Go or an emulator
 
-## Get a fresh project
+## Link to the demo 👇
+https://youtube.com/shorts/JK6XlPAhG00?si=LnIV1xzh7qNlT1Pe
 
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
